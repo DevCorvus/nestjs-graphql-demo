@@ -1,9 +1,39 @@
+import { join } from 'path';
+
+import { ApolloDriver, ApolloDriverConfig } from '@nestjs/apollo';
 import { Module } from '@nestjs/common';
+import { GraphQLModule } from '@nestjs/graphql';
+import { TypeOrmModule } from '@nestjs/typeorm';
+
 import { AppController } from './app.controller';
+import { TodosModule } from './todos/todos.module';
+import { UsersModule } from './users/users.module';
 
 @Module({
-  imports: [],
+  imports: [
+    TypeOrmModule.forRoot({
+      type: 'sqlite',
+      database: ':memory:',
+      entities: ['dist/**/*.entity.js'],
+      logging: true,
+      synchronize: true,
+    }),
+    GraphQLModule.forRoot<ApolloDriverConfig>({
+      driver: ApolloDriver,
+      autoSchemaFile: join(process.cwd(), 'src/schema.gql'),
+      context: ({ req }) => {
+        // TODO: Real authentication
+        const userId: string | null = req.headers.authorization;
+        if (userId) {
+          return { userId: parseInt(userId) };
+        } else {
+          return { userId: null };
+        }
+      },
+    }),
+    UsersModule,
+    TodosModule,
+  ],
   controllers: [AppController],
-  providers: [],
 })
 export class AppModule {}
