@@ -14,8 +14,12 @@ import { UsersModule } from './users/users.module';
     TypeOrmModule.forRoot({
       type: 'sqlite',
       database: ':memory:',
-      entities: ['dist/**/*.entity.js'],
-      logging: true,
+      entities: [
+        process.env.NODE_ENV === 'test'
+          ? 'src/**/*.entity.ts'
+          : 'dist/**/*.entity.js',
+      ],
+      logging: process.env.NODE_ENV !== 'test',
       synchronize: true,
     }),
     GraphQLModule.forRoot<ApolloDriverConfig>({
