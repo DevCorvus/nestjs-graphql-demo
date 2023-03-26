@@ -1,5 +1,5 @@
-import { UpdateUserInput } from '../../src/users/dto/update-user.input';
 import { CreateUserInput } from '../../src/users/dto/create-user.input';
+import { UpdateUserInput } from '../../src/users/dto/update-user.input';
 
 export const mockUser: CreateUserInput = {
   email: 'fulano@email.com',

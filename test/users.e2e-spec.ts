@@ -4,26 +4,30 @@ import { INestApplication } from '@nestjs/common';
 import { Test, TestingModule } from '@nestjs/testing';
 
 import { AppModule } from '../src/app.module';
+import { Todo } from '../src/todos/todo.entity';
+import { TodosService } from '../src/todos/todos.service';
 import { User } from '../src/users/user.entity';
 import { UsersService } from '../src/users/users.service';
 import { mockUser, mockUserUpdate } from './mock-data/users';
+import { mockTodo } from './mock-data/todos';
 
 describe('UsersResolver (e2e)', () => {
   let app: INestApplication;
-  let usersService: UsersService;
   let httpRequest: request.SuperTest<request.Test>;
+  let usersService: UsersService;
+  let todosService: TodosService;
 
   beforeEach(async () => {
     const moduleFixture: TestingModule = await Test.createTestingModule({
       imports: [AppModule],
     }).compile();
 
-    usersService = moduleFixture.get<UsersService>(UsersService);
-
     app = moduleFixture.createNestApplication();
     await app.init();
 
     httpRequest = request(app.getHttpServer());
+    usersService = moduleFixture.get<UsersService>(UsersService);
+    todosService = moduleFixture.get<TodosService>(TodosService);
   });
 
   afterEach(async () => {
@@ -60,7 +64,7 @@ describe('UsersResolver (e2e)', () => {
     expect(new Date(resData.createdAt).getTime).not.toBeNaN();
     expect(new Date(resData.updatedAt).getTime).not.toBeNaN();
 
-    const userExists = await usersService.exists(res.body.data.createUser.id);
+    const userExists = await usersService.exists(resData.id);
     expect(userExists).toBeTruthy();
   });
 
@@ -71,7 +75,7 @@ describe('UsersResolver (e2e)', () => {
       user = await usersService.create(mockUser);
     });
 
-    it('should return all users', async () => {
+    it('should get all users', async () => {
       const data = {
         query: `
           query {
@@ -83,16 +87,17 @@ describe('UsersResolver (e2e)', () => {
       };
 
       const res = await httpRequest.post('/graphql').send(data);
-
       expect(res.status).toBe(200);
-      expect(Array.isArray(res.body.data.users)).toBeTruthy();
-      expect(res.body.data.users).toHaveLength(1);
-      expect(res.body.data.users).toContainEqual({
+
+      const resData = res.body.data.users;
+      expect(Array.isArray(resData)).toBeTruthy();
+      expect(resData).toHaveLength(1);
+      expect(resData).toContainEqual({
         id: user.id,
       });
     });
 
-    it('should return one user', async () => {
+    it('should get one user', async () => {
       const data = {
         query: `
           query {
@@ -163,6 +168,43 @@ describe('UsersResolver (e2e)', () => {
 
       const userExists = await usersService.exists(user.id);
       expect(userExists).toBeFalsy();
+    });
+
+    describe('after todo created', () => {
+      let todo: Todo;
+
+      beforeEach(async () => {
+        todo = await todosService.create(user.id, mockTodo);
+      });
+
+      it('should get user with todos', async () => {
+        const data = {
+          query: `
+            query {
+              user(id: ${user.id}) {
+                id
+                email
+                todos {
+                  title
+                }
+              }
+            }
+          `,
+        };
+
+        const res = await httpRequest.post('/graphql').send(data);
+
+        expect(res.status).toBe(200);
+        expect(res.body.data.user).toEqual({
+          id: user.id,
+          email: user.email,
+          todos: [
+            {
+              title: todo.title,
+            },
+          ],
+        });
+      });
     });
   });
 });
