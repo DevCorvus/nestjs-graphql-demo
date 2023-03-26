@@ -1,6 +1,6 @@
 import * as request from 'supertest';
 
-import { INestApplication } from '@nestjs/common';
+import { INestApplication, ValidationPipe } from '@nestjs/common';
 import { Test, TestingModule } from '@nestjs/testing';
 
 import { AppModule } from '../src/app.module';
@@ -8,8 +8,8 @@ import { Todo } from '../src/todos/todo.entity';
 import { TodosService } from '../src/todos/todos.service';
 import { User } from '../src/users/user.entity';
 import { UsersService } from '../src/users/users.service';
-import { mockUser, mockUserUpdate } from './mock-data/users';
 import { mockTodo } from './mock-data/todos';
+import { mockUser, mockUserUpdate } from './mock-data/users';
 
 describe('UsersResolver (e2e)', () => {
   let app: INestApplication;
@@ -23,6 +23,7 @@ describe('UsersResolver (e2e)', () => {
     }).compile();
 
     app = moduleFixture.createNestApplication();
+    app.useGlobalPipes(new ValidationPipe());
     await app.init();
 
     httpRequest = request(app.getHttpServer());
@@ -66,6 +67,88 @@ describe('UsersResolver (e2e)', () => {
 
     const userExists = await usersService.exists(resData.id);
     expect(userExists).toBeTruthy();
+  });
+
+  describe('validation errors on create user', () => {
+    it('invalid email', async () => {
+      const data = {
+        query: `
+          mutation CreateUser($data: CreateUserInput!) {
+            createUser(data: $data) {
+              id
+            }
+          }
+        `,
+        variables: {
+          data: {
+            email: 'notanemail.com',
+            password: mockUser.password,
+          },
+        },
+      };
+
+      return httpRequest.post('/graphql').send(data).expect(400);
+    });
+
+    it('email too long', async () => {
+      const data = {
+        query: `
+          mutation CreateUser($data: CreateUserInput!) {
+            createUser(data: $data) {
+              id
+            }
+          }
+        `,
+        variables: {
+          data: {
+            email: 'a'.repeat(200) + '@email.com',
+            password: mockUser.password,
+          },
+        },
+      };
+
+      return httpRequest.post('/graphql').send(data).expect(400);
+    });
+
+    it('password too short', async () => {
+      const data = {
+        query: `
+          mutation CreateUser($data: CreateUserInput!) {
+            createUser(data: $data) {
+              id
+            }
+          }
+        `,
+        variables: {
+          data: {
+            email: mockUser.email,
+            password: 'aaa',
+          },
+        },
+      };
+
+      return httpRequest.post('/graphql').send(data).expect(400);
+    });
+
+    it('password too long', async () => {
+      const data = {
+        query: `
+          mutation CreateUser($data: CreateUserInput!) {
+            createUser(data: $data) {
+              id
+            }
+          }
+        `,
+        variables: {
+          data: {
+            email: mockUser.email,
+            password: 'a'.repeat(251),
+          },
+        },
+      };
+
+      return httpRequest.post('/graphql').send(data).expect(400);
+    });
   });
 
   describe('after user created', () => {
