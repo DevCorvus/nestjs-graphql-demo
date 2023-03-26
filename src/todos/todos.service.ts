@@ -52,4 +52,8 @@ export class TodosService {
       return null;
     }
   }
+
+  async exists(todoId: number): Promise<boolean> {
+    return this.todosRepository.exist({ where: { id: todoId } });
+  }
 }

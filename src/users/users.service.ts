@@ -44,4 +44,8 @@ export class UsersService {
       return null;
     }
   }
+
+  async exists(userId: number): Promise<boolean> {
+    return this.usersRepository.exist({ where: { id: userId } });
+  }
 }
