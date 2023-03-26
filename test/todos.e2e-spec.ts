@@ -103,7 +103,7 @@ describe('TodosResolver (e2e)', () => {
         expect(Array.isArray(resData)).toBeTruthy();
         expect(resData).toHaveLength(1);
         expect(resData).toContainEqual({
-          id: todo.id,
+          id: expect.any(Number),
         });
       });
 

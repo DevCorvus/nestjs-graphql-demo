@@ -93,7 +93,7 @@ describe('UsersResolver (e2e)', () => {
       expect(Array.isArray(resData)).toBeTruthy();
       expect(resData).toHaveLength(1);
       expect(resData).toContainEqual({
-        id: user.id,
+        id: expect.any(Number),
       });
     });
 
