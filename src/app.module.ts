@@ -8,6 +8,7 @@ import { TypeOrmModule } from '@nestjs/typeorm';
 import { AppController } from './app.controller';
 import { TodosModule } from './todos/todos.module';
 import { UsersModule } from './users/users.module';
+import { gqlErrorFormatter } from './utils/gqlErrorFormatter';
 
 @Module({
   imports: [
@@ -34,6 +35,7 @@ import { UsersModule } from './users/users.module';
           return { userId: null };
         }
       },
+      formatError: gqlErrorFormatter,
     }),
     UsersModule,
     TodosModule,
