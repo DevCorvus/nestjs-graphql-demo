@@ -35,6 +35,27 @@ describe('UsersResolver (e2e)', () => {
     await app.close();
   });
 
+  it('should not found a user', async () => {
+    const data = {
+      query: `
+        query {
+          user(id: 1) {
+            id
+          }
+        }
+      `,
+    };
+
+    const res = await httpRequest.post('/graphql').send(data);
+
+    expect(res.status).toBe(200);
+    expect(res.body.errors).toContainEqual({
+      error: 'Not Found',
+      message: 'User not found',
+      statusCode: 404,
+    });
+  });
+
   it('should create a user', async () => {
     const data = {
       query: `
@@ -69,7 +90,7 @@ describe('UsersResolver (e2e)', () => {
     expect(userExists).toBeTruthy();
   });
 
-  describe('validation errors on create user', () => {
+  describe('validation errors on create/update user', () => {
     it('invalid email', async () => {
       const data = {
         query: `
@@ -87,7 +108,14 @@ describe('UsersResolver (e2e)', () => {
         },
       };
 
-      return httpRequest.post('/graphql').send(data).expect(400);
+      const res = await httpRequest.post('/graphql').send(data);
+
+      expect(res.status).toBe(200);
+      expect(res.body.errors).toContainEqual({
+        error: 'Bad Request',
+        message: ['email must be an email'],
+        statusCode: 400,
+      });
     });
 
     it('email too long', async () => {
@@ -101,13 +129,23 @@ describe('UsersResolver (e2e)', () => {
         `,
         variables: {
           data: {
-            email: 'a'.repeat(200) + '@email.com',
+            email: 'a'.repeat(200).concat('@email.com'),
             password: mockUser.password,
           },
         },
       };
 
-      return httpRequest.post('/graphql').send(data).expect(400);
+      const res = await httpRequest.post('/graphql').send(data);
+
+      expect(res.status).toBe(200);
+      expect(res.body.errors).toContainEqual({
+        error: 'Bad Request',
+        message: [
+          'email must be shorter than or equal to 200 characters',
+          'email must be an email',
+        ],
+        statusCode: 400,
+      });
     });
 
     it('password too short', async () => {
@@ -127,7 +165,14 @@ describe('UsersResolver (e2e)', () => {
         },
       };
 
-      return httpRequest.post('/graphql').send(data).expect(400);
+      const res = await httpRequest.post('/graphql').send(data);
+
+      expect(res.status).toBe(200);
+      expect(res.body.errors).toContainEqual({
+        error: 'Bad Request',
+        message: ['password must be longer than or equal to 6 characters'],
+        statusCode: 400,
+      });
     });
 
     it('password too long', async () => {
@@ -147,7 +192,14 @@ describe('UsersResolver (e2e)', () => {
         },
       };
 
-      return httpRequest.post('/graphql').send(data).expect(400);
+      const res = await httpRequest.post('/graphql').send(data);
+
+      expect(res.status).toBe(200);
+      expect(res.body.errors).toContainEqual({
+        error: 'Bad Request',
+        message: ['password must be shorter than or equal to 250 characters'],
+        statusCode: 400,
+      });
     });
   });
 
@@ -156,6 +208,29 @@ describe('UsersResolver (e2e)', () => {
 
     beforeEach(async () => {
       user = await usersService.create(mockUser);
+    });
+
+    it('should not create an already existing user', async () => {
+      const data = {
+        query: `
+          mutation CreateUser($data: CreateUserInput!) {
+            createUser(data: $data) {
+              id
+            }
+          }
+        `,
+        variables: {
+          data: mockUser,
+        },
+      };
+
+      const res = await httpRequest.post('/graphql').send(data);
+      expect(res.status).toBe(200);
+      expect(res.body.errors).toContainEqual({
+        error: 'Conflict',
+        message: 'User already exists',
+        statusCode: 409,
+      });
     });
 
     it('should get all users', async () => {

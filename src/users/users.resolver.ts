@@ -1,3 +1,4 @@
+import { ConflictException } from '@nestjs/common';
 import {
   Args,
   Int,
@@ -8,12 +9,13 @@ import {
   Resolver,
 } from '@nestjs/graphql';
 
+import { UserNotFoundException } from '../exceptions/user-not-found.exception';
 import { Todo } from '../todos/todo.entity';
 import { TodosService } from '../todos/todos.service';
 import { CreateUserInput } from './dto/create-user.input';
+import { UpdateUserInput } from './dto/update-user.input';
 import { User } from './user.entity';
 import { UsersService } from './users.service';
-import { UpdateUserInput } from './dto/update-user.input';
 
 @Resolver(() => User)
 export class UsersResolver {
@@ -31,13 +33,23 @@ export class UsersResolver {
   async user(
     @Args('id', { type: () => Int }) id: number,
   ): Promise<User | null> {
-    return this.usersService.findOne(id);
+    const foundUser = await this.usersService.findOne(id);
+
+    if (foundUser) {
+      return foundUser;
+    } else {
+      throw new UserNotFoundException();
+    }
   }
 
   @Mutation(() => User)
   async createUser(@Args('data') data: CreateUserInput): Promise<User | null> {
-    const newUser = await this.usersService.create(data);
-    return newUser;
+    try {
+      const newUser = await this.usersService.create(data);
+      return newUser;
+    } catch (error) {
+      throw new ConflictException('User already exists');
+    }
   }
 
   @Mutation(() => User)
@@ -45,14 +57,26 @@ export class UsersResolver {
     @Args('id', { type: () => Int }) id: number,
     @Args('data') data: UpdateUserInput,
   ): Promise<User | null> {
-    return this.usersService.update(id, data);
+    const updatedUser = await this.usersService.update(id, data);
+
+    if (updatedUser) {
+      return updatedUser;
+    } else {
+      throw new UserNotFoundException();
+    }
   }
 
   @Mutation(() => User)
   async deleteUser(
     @Args('id', { type: () => Int }) id: number,
   ): Promise<User | null> {
-    return this.usersService.delete(id);
+    const deletedUser = await this.usersService.delete(id);
+
+    if (deletedUser) {
+      return deletedUser;
+    } else {
+      throw new UserNotFoundException();
+    }
   }
 
   @ResolveField()
