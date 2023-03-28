@@ -4,6 +4,7 @@ import { INestApplication, ValidationPipe } from '@nestjs/common';
 import { Test, TestingModule } from '@nestjs/testing';
 
 import { AppModule } from '../src/app.module';
+import { AuthService } from '../src/auth/auth.service';
 import { Todo } from '../src/todos/todo.entity';
 import { TodosService } from '../src/todos/todos.service';
 import { User } from '../src/users/user.entity';
@@ -14,6 +15,7 @@ import { mockUser, mockUserUpdate } from './mock-data/users';
 describe('UsersResolver (e2e)', () => {
   let app: INestApplication;
   let httpRequest: request.SuperTest<request.Test>;
+  let authService: AuthService;
   let usersService: UsersService;
   let todosService: TodosService;
 
@@ -27,6 +29,7 @@ describe('UsersResolver (e2e)', () => {
     await app.init();
 
     httpRequest = request(app.getHttpServer());
+    authService = moduleFixture.get<AuthService>(AuthService);
     usersService = moduleFixture.get<UsersService>(UsersService);
     todosService = moduleFixture.get<TodosService>(TodosService);
   });
@@ -81,7 +84,7 @@ describe('UsersResolver (e2e)', () => {
     expect(resData).toMatchObject({
       id: expect.any(Number),
       email: mockUser.email,
-      password: mockUser.password,
+      password: expect.any(String),
     });
     expect(new Date(resData.createdAt).getTime).not.toBeNaN();
     expect(new Date(resData.updatedAt).getTime).not.toBeNaN();
@@ -276,56 +279,119 @@ describe('UsersResolver (e2e)', () => {
       });
     });
 
-    it('should update a user', async () => {
+    it('should not allow to update user', async () => {
       const data = {
         query: `
-          mutation UpdateUser($id: Int!, $data: UpdateUserInput!) {
-            updateUser(id: $id, data: $data) {
+          mutation UpdateUser($data: UpdateUserInput!) {
+            updateUser(data: $data) {
               id
-              email
             }
           }
         `,
         variables: {
-          id: user.id,
           data: mockUserUpdate,
         },
       };
 
-      const res = await httpRequest.post('/graphql').send(data);
+      const res = await httpRequest
+        .post('/graphql')
+        .set('Authorization', 'Bearer uwu')
+        .send(data);
 
       expect(res.status).toBe(200);
-      expect(res.body.data.updateUser).toEqual({
-        id: user.id,
-        email: mockUserUpdate.email,
+      expect(res.body.errors).toContainEqual({
+        message: 'Unauthorized',
+        statusCode: 401,
       });
     });
 
-    it('should delete a user', async () => {
+    it('should not allow to delete user', async () => {
       const data = {
         query: `
-          mutation DeleteUser($id: Int!) {
-            deleteUser(id: $id) {
+          mutation {
+            deleteUser {
               id
-              email
             }
           }
         `,
-        variables: {
-          id: user.id,
-        },
       };
 
-      const res = await httpRequest.post('/graphql').send(data);
+      const res = await httpRequest
+        .post('/graphql')
+        .set('Authorization', 'Bearer uwu')
+        .send(data);
 
       expect(res.status).toBe(200);
-      expect(res.body.data.deleteUser).toEqual({
-        id: user.id,
-        email: user.email,
+      expect(res.body.errors).toContainEqual({
+        message: 'Unauthorized',
+        statusCode: 401,
+      });
+    });
+
+    describe('after user logged in', () => {
+      let accessToken: string;
+
+      beforeEach(async () => {
+        const jwt = await authService.login({
+          id: user.id,
+          email: user.email,
+        });
+        accessToken = jwt.accessToken;
       });
 
-      const userExists = await usersService.exists(user.id);
-      expect(userExists).toBeFalsy();
+      it('should update a user', async () => {
+        const data = {
+          query: `
+            mutation UpdateUser($data: UpdateUserInput!) {
+              updateUser(data: $data) {
+                id
+                email
+              }
+            }
+          `,
+          variables: {
+            data: mockUserUpdate,
+          },
+        };
+
+        const res = await httpRequest
+          .post('/graphql')
+          .set('Authorization', `Bearer ${accessToken}`)
+          .send(data);
+
+        expect(res.status).toBe(200);
+        expect(res.body.data.updateUser).toEqual({
+          id: user.id,
+          email: mockUserUpdate.email,
+        });
+      });
+
+      it('should delete a user', async () => {
+        const data = {
+          query: `
+            mutation {
+              deleteUser {
+                id
+                email
+              }
+            }
+          `,
+        };
+
+        const res = await httpRequest
+          .post('/graphql')
+          .set('Authorization', `Bearer ${accessToken}`)
+          .send(data);
+
+        expect(res.status).toBe(200);
+        expect(res.body.data.deleteUser).toEqual({
+          id: user.id,
+          email: user.email,
+        });
+
+        const userExists = await usersService.exists(user.id);
+        expect(userExists).toBeFalsy();
+      });
     });
 
     describe('after todo created', () => {

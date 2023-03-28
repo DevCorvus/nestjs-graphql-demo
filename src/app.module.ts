@@ -6,6 +6,7 @@ import { GraphQLModule } from '@nestjs/graphql';
 import { TypeOrmModule } from '@nestjs/typeorm';
 
 import { AppController } from './app.controller';
+import { AuthModule } from './auth/auth.module';
 import { TodosModule } from './todos/todos.module';
 import { UsersModule } from './users/users.module';
 import { gqlErrorFormatter } from './utils/gqlErrorFormatter';
@@ -26,17 +27,9 @@ import { gqlErrorFormatter } from './utils/gqlErrorFormatter';
     GraphQLModule.forRoot<ApolloDriverConfig>({
       driver: ApolloDriver,
       autoSchemaFile: join(process.cwd(), 'src/schema.gql'),
-      context: ({ req }) => {
-        // TODO: Real authentication
-        const userId: string | null = req.headers.authorization;
-        if (userId) {
-          return { userId: parseInt(userId) };
-        } else {
-          return { userId: null };
-        }
-      },
       formatError: gqlErrorFormatter,
     }),
+    AuthModule,
     UsersModule,
     TodosModule,
   ],

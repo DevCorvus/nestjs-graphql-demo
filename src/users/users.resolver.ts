@@ -1,4 +1,4 @@
-import { ConflictException } from '@nestjs/common';
+import { ConflictException, UseGuards } from '@nestjs/common';
 import {
   Args,
   Int,
@@ -9,6 +9,9 @@ import {
   Resolver,
 } from '@nestjs/graphql';
 
+import { AuthUser } from '../auth/auth.service';
+import { CurrentUser } from '../auth/decorators/current-user.decorator';
+import { GqlAuthGuard } from '../auth/guards/gql-jwt-auth.guard';
 import { UserNotFoundException } from '../exceptions/user-not-found.exception';
 import { Todo } from '../todos/todo.entity';
 import { TodosService } from '../todos/todos.service';
@@ -33,7 +36,7 @@ export class UsersResolver {
   async user(
     @Args('id', { type: () => Int }) id: number,
   ): Promise<User | null> {
-    const foundUser = await this.usersService.findOne(id);
+    const foundUser = await this.usersService.findOne({ id });
 
     if (foundUser) {
       return foundUser;
@@ -53,11 +56,12 @@ export class UsersResolver {
   }
 
   @Mutation(() => User)
+  @UseGuards(GqlAuthGuard)
   async updateUser(
-    @Args('id', { type: () => Int }) id: number,
+    @CurrentUser() user: AuthUser,
     @Args('data') data: UpdateUserInput,
   ): Promise<User | null> {
-    const updatedUser = await this.usersService.update(id, data);
+    const updatedUser = await this.usersService.update(user.id, data);
 
     if (updatedUser) {
       return updatedUser;
@@ -67,10 +71,9 @@ export class UsersResolver {
   }
 
   @Mutation(() => User)
-  async deleteUser(
-    @Args('id', { type: () => Int }) id: number,
-  ): Promise<User | null> {
-    const deletedUser = await this.usersService.delete(id);
+  @UseGuards(GqlAuthGuard)
+  async deleteUser(@CurrentUser() user: AuthUser): Promise<User | null> {
+    const deletedUser = await this.usersService.delete(user.id);
 
     if (deletedUser) {
       return deletedUser;

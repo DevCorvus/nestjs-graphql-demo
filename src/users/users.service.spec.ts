@@ -44,7 +44,7 @@ describe('UsersService', () => {
     });
 
     it('should return a user', () => {
-      return expect(usersService.findOne(user.id)).resolves.toEqual({
+      return expect(usersService.findOne({ id: user.id })).resolves.toEqual({
         id: expect.any(Number),
         email: user.email,
         password: user.password,

@@ -1,6 +1,6 @@
+import { UseGuards } from '@nestjs/common';
 import {
   Args,
-  Context,
   Int,
   Mutation,
   Parent,
@@ -9,7 +9,9 @@ import {
   Resolver,
 } from '@nestjs/graphql';
 
-import { ApolloContext } from '../apollo-context.interface';
+import { AuthUser } from '../auth/auth.service';
+import { CurrentUser } from '../auth/decorators/current-user.decorator';
+import { GqlAuthGuard } from '../auth/guards/gql-jwt-auth.guard';
 import { User } from '../users/user.entity';
 import { UsersService } from '../users/users.service';
 import { CreateTodoInput } from './dto/create-todo.input';
@@ -35,33 +37,37 @@ export class TodosResolver {
   }
 
   @Mutation(() => Todo)
+  @UseGuards(GqlAuthGuard)
   async createTodo(
-    @Context() ctx: ApolloContext,
+    @CurrentUser() user: AuthUser,
     @Args('data') data: CreateTodoInput,
   ): Promise<Todo | null> {
-    const newTodo = await this.todosService.create(ctx.userId, data);
+    const newTodo = await this.todosService.create(user.id, data);
     return newTodo;
   }
 
   @Mutation(() => Todo)
+  @UseGuards(GqlAuthGuard)
   async updateTodo(
-    @Context() ctx: ApolloContext,
-    @Args('id', { type: () => Int }) id: number,
+    @CurrentUser() user: AuthUser,
+    @Args('id', { type: () => Int })
+    id: number,
     @Args('data') data: UpdateTodoInput,
   ): Promise<Todo | null> {
-    return this.todosService.update(ctx.userId, id, data);
+    return this.todosService.update(user.id, id, data);
   }
 
   @Mutation(() => Todo)
+  @UseGuards(GqlAuthGuard)
   async deleteTodo(
-    @Context() ctx: ApolloContext,
+    @CurrentUser() user: AuthUser,
     @Args('id', { type: () => Int }) id: number,
   ): Promise<Todo | null> {
-    return this.todosService.delete(ctx.userId, id);
+    return this.todosService.delete(user.id, id);
   }
 
   @ResolveField()
   async user(@Parent() todo: Todo): Promise<User> {
-    return this.usersService.findOne(todo.user as number);
+    return this.usersService.findOne({ id: todo.user as number });
   }
 }
