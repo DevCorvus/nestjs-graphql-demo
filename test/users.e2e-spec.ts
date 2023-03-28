@@ -66,7 +66,6 @@ describe('UsersResolver (e2e)', () => {
           createUser(data: $data) {
             id
             email
-            password
             createdAt
             updatedAt
           }
@@ -84,7 +83,6 @@ describe('UsersResolver (e2e)', () => {
     expect(resData).toMatchObject({
       id: expect.any(Number),
       email: mockUser.email,
-      password: expect.any(String),
     });
     expect(new Date(resData.createdAt).getTime).not.toBeNaN();
     expect(new Date(resData.updatedAt).getTime).not.toBeNaN();

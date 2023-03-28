@@ -23,7 +23,6 @@ export class User {
   email: string;
 
   @Column()
-  @Field()
   password: string;
 
   @CreateDateColumn()
