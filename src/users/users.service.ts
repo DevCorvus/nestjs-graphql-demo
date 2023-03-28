@@ -1,4 +1,4 @@
-import { FindOptionsWhere, Repository } from 'typeorm';
+import { FindOptionsWhere, Repository, UpdateResult } from 'typeorm';
 
 import { Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
@@ -30,7 +30,18 @@ export class UsersService {
   }
 
   async update(userId: number, data: UpdateUserInput): Promise<User | null> {
-    const result = await this.usersRepository.update(userId, data);
+    let result: UpdateResult;
+
+    if (data.password) {
+      const hashedPassword = await this.passwordService.hash(data.password);
+      result = await this.usersRepository.update(userId, {
+        ...data,
+        password: hashedPassword,
+      });
+    } else {
+      result = await this.usersRepository.update(userId, data);
+    }
+
     if (Boolean(result.affected)) {
       return this.usersRepository.findOneBy({ id: userId });
     } else {

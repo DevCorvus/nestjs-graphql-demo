@@ -9,7 +9,7 @@ import { User } from '../src/users/user.entity';
 import { UsersService } from '../src/users/users.service';
 import { mockUser } from './mock-data/users';
 
-describe('UsersResolver (e2e)', () => {
+describe('AuthController (e2e)', () => {
   let app: INestApplication;
   let httpRequest: request.SuperTest<request.Test>;
   let usersService: UsersService;

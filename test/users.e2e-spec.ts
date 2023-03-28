@@ -93,16 +93,16 @@ describe('UsersResolver (e2e)', () => {
     expect(userExists).toBeTruthy();
   });
 
-  describe('validation errors on create/update user', () => {
+  describe('validation errors on create user', () => {
     it('invalid email', async () => {
       const data = {
         query: `
-          mutation CreateUser($data: CreateUserInput!) {
-            createUser(data: $data) {
-              id
+            mutation CreateUser($data: CreateUserInput!) {
+              createUser(data: $data) {
+                id
+              }
             }
-          }
-        `,
+          `,
         variables: {
           data: {
             email: 'notanemail.com',
@@ -124,12 +124,12 @@ describe('UsersResolver (e2e)', () => {
     it('email too long', async () => {
       const data = {
         query: `
-          mutation CreateUser($data: CreateUserInput!) {
-            createUser(data: $data) {
-              id
+            mutation CreateUser($data: CreateUserInput!) {
+              createUser(data: $data) {
+                id
+              }
             }
-          }
-        `,
+          `,
         variables: {
           data: {
             email: 'a'.repeat(200).concat('@email.com'),
@@ -154,12 +154,12 @@ describe('UsersResolver (e2e)', () => {
     it('password too short', async () => {
       const data = {
         query: `
-          mutation CreateUser($data: CreateUserInput!) {
-            createUser(data: $data) {
-              id
+            mutation CreateUser($data: CreateUserInput!) {
+              createUser(data: $data) {
+                id
+              }
             }
-          }
-        `,
+          `,
         variables: {
           data: {
             email: mockUser.email,
@@ -181,12 +181,12 @@ describe('UsersResolver (e2e)', () => {
     it('password too long', async () => {
       const data = {
         query: `
-          mutation CreateUser($data: CreateUserInput!) {
-            createUser(data: $data) {
-              id
+            mutation CreateUser($data: CreateUserInput!) {
+              createUser(data: $data) {
+                id
+              }
             }
-          }
-        `,
+          `,
         variables: {
           data: {
             email: mockUser.email,
@@ -337,6 +337,133 @@ describe('UsersResolver (e2e)', () => {
           email: user.email,
         });
         accessToken = jwt.accessToken;
+      });
+
+      describe('validation errors on update user', () => {
+        it('invalid email', async () => {
+          const data = {
+            query: `
+              mutation UpdateUser($data: UpdateUserInput!) {
+                updateUser(data: $data) {
+                  id
+                }
+              }
+            `,
+            variables: {
+              data: {
+                email: 'notanemail.com',
+                password: mockUserUpdate.password,
+              },
+            },
+          };
+
+          const res = await httpRequest
+            .post('/graphql')
+            .set('Authorization', `Bearer ${accessToken}`)
+            .send(data);
+
+          expect(res.status).toBe(200);
+          expect(res.body.errors).toContainEqual({
+            error: 'Bad Request',
+            message: ['email must be an email'],
+            statusCode: 400,
+          });
+        });
+
+        it('email too long', async () => {
+          const data = {
+            query: `
+              mutation UpdateUser($data: UpdateUserInput!) {
+                updateUser(data: $data) {
+                  id
+                }
+              }
+            `,
+            variables: {
+              data: {
+                email: 'a'.repeat(200).concat('@email.com'),
+                password: mockUserUpdate.password,
+              },
+            },
+          };
+
+          const res = await httpRequest
+            .post('/graphql')
+            .set('Authorization', `Bearer ${accessToken}`)
+            .send(data);
+
+          expect(res.status).toBe(200);
+          expect(res.body.errors).toContainEqual({
+            error: 'Bad Request',
+            message: [
+              'email must be shorter than or equal to 200 characters',
+              'email must be an email',
+            ],
+            statusCode: 400,
+          });
+        });
+
+        it('password too short', async () => {
+          const data = {
+            query: `
+              mutation UpdateUser($data: UpdateUserInput!) {
+                updateUser(data: $data) {
+                  id
+                }
+              }
+            `,
+            variables: {
+              data: {
+                email: mockUserUpdate.email,
+                password: 'aaa',
+              },
+            },
+          };
+
+          const res = await httpRequest
+            .post('/graphql')
+            .set('Authorization', `Bearer ${accessToken}`)
+            .send(data);
+
+          expect(res.status).toBe(200);
+          expect(res.body.errors).toContainEqual({
+            error: 'Bad Request',
+            message: ['password must be longer than or equal to 6 characters'],
+            statusCode: 400,
+          });
+        });
+
+        it('password too long', async () => {
+          const data = {
+            query: `
+              mutation UpdateUser($data: UpdateUserInput!) {
+                updateUser(data: $data) {
+                  id
+                }
+              }
+            `,
+            variables: {
+              data: {
+                email: mockUserUpdate.email,
+                password: 'a'.repeat(251),
+              },
+            },
+          };
+
+          const res = await httpRequest
+            .post('/graphql')
+            .set('Authorization', `Bearer ${accessToken}`)
+            .send(data);
+
+          expect(res.status).toBe(200);
+          expect(res.body.errors).toContainEqual({
+            error: 'Bad Request',
+            message: [
+              'password must be shorter than or equal to 250 characters',
+            ],
+            statusCode: 400,
+          });
+        });
       });
 
       it('should update a user', async () => {

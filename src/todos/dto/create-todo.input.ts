@@ -1,8 +1,9 @@
 import { Field, InputType } from '@nestjs/graphql';
+import { Length } from 'class-validator';
 
-// TODO: Validation
 @InputType()
 export class CreateTodoInput {
   @Field()
+  @Length(1, 100)
   title: string;
 }

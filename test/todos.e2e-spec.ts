@@ -38,7 +38,7 @@ describe('TodosResolver (e2e)', () => {
     await app.close();
   });
 
-  describe('after user created and logged in', () => {
+  describe('after user created', () => {
     let user: User;
 
     beforeEach(async () => {
@@ -184,6 +184,136 @@ describe('TodosResolver (e2e)', () => {
             email: user.email,
           });
           accessToken = jwt.accessToken;
+        });
+
+        describe('validation errors', () => {
+          describe('create', () => {
+            it('title too short', async () => {
+              const data = {
+                query: `
+                  mutation CreateTodo($data: CreateTodoInput!) {
+                    createTodo(data: $data) {
+                      id
+                    }
+                  }
+                `,
+                variables: {
+                  data: {
+                    title: '',
+                  },
+                },
+              };
+
+              const res = await httpRequest
+                .post('/graphql')
+                .set('Authorization', `Bearer ${accessToken}`)
+                .send(data);
+
+              expect(res.status).toBe(200);
+              expect(res.body.errors).toContainEqual({
+                error: 'Bad Request',
+                message: ['title must be longer than or equal to 1 characters'],
+                statusCode: 400,
+              });
+            });
+
+            it('title too long', async () => {
+              const data = {
+                query: `
+                  mutation CreateTodo($data: CreateTodoInput!) {
+                    createTodo(data: $data) {
+                      id
+                    }
+                  }
+                `,
+                variables: {
+                  data: {
+                    title: 'a'.repeat(101),
+                  },
+                },
+              };
+
+              const res = await httpRequest
+                .post('/graphql')
+                .set('Authorization', `Bearer ${accessToken}`)
+                .send(data);
+
+              expect(res.status).toBe(200);
+              expect(res.body.errors).toContainEqual({
+                error: 'Bad Request',
+                message: [
+                  'title must be shorter than or equal to 100 characters',
+                ],
+                statusCode: 400,
+              });
+            });
+          });
+
+          describe('update', () => {
+            it('title too short', async () => {
+              const data = {
+                query: `
+                  mutation UpdateTodo($id: Int!, $data: UpdateTodoInput!) {
+                    updateTodo(id: $id, data: $data) {
+                      id
+                    }
+                  }
+                `,
+                variables: {
+                  id: todo.id,
+                  data: {
+                    title: '',
+                    done: mockTodoUpdate.done,
+                  },
+                },
+              };
+
+              const res = await httpRequest
+                .post('/graphql')
+                .set('Authorization', `Bearer ${accessToken}`)
+                .send(data);
+
+              expect(res.status).toBe(200);
+              expect(res.body.errors).toContainEqual({
+                error: 'Bad Request',
+                message: ['title must be longer than or equal to 1 characters'],
+                statusCode: 400,
+              });
+            });
+
+            it('title too long', async () => {
+              const data = {
+                query: `
+                  mutation UpdateTodo($id: Int!, $data: UpdateTodoInput!) {
+                    updateTodo(id: $id, data: $data) {
+                      id
+                    }
+                  }
+                `,
+                variables: {
+                  id: todo.id,
+                  data: {
+                    title: 'a'.repeat(101),
+                    done: mockTodoUpdate.done,
+                  },
+                },
+              };
+
+              const res = await httpRequest
+                .post('/graphql')
+                .set('Authorization', `Bearer ${accessToken}`)
+                .send(data);
+
+              expect(res.status).toBe(200);
+              expect(res.body.errors).toContainEqual({
+                error: 'Bad Request',
+                message: [
+                  'title must be shorter than or equal to 100 characters',
+                ],
+                statusCode: 400,
+              });
+            });
+          });
         });
 
         it('should create a todo', async () => {

@@ -8,4 +8,5 @@ export const mockUser: CreateUserInput = {
 
 export const mockUserUpdate: UpdateUserInput = {
   email: 'fulanito@email.com',
+  password: '654321',
 };

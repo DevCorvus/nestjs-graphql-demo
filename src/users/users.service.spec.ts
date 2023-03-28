@@ -81,7 +81,7 @@ describe('UsersService', () => {
       ).resolves.toEqual({
         id: expect.any(Number),
         email: mockUserUpdate.email,
-        password: user.password,
+        password: expect.not.stringMatching(user.password),
         createdAt: expect.any(Date),
         updatedAt: expect.any(Date),
       });
