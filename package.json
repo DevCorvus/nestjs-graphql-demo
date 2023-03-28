@@ -1,7 +1,7 @@
 {
   "name": "nestjs-graphql-demo",
   "version": "0.0.1",
-  "description": "",
+  "description": "A NestJS GraphQL demo API with Passport, TypeORM and some other stuff",
   "author": {
     "name": "Luis Portillo",
     "email": "devcorvus.contact@gmail.com",
