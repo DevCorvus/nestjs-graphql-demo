@@ -3,6 +3,7 @@ import { TypeOrmModule } from '@nestjs/typeorm';
 
 import { typeormTestingModuleConfig } from '../../test/config/typeorm';
 import { mockUser, mockUserUpdate } from '../../test/mock-data/users';
+import { PasswordService } from '../password/password.service';
 import { User } from './user.entity';
 import { UsersService } from './users.service';
 
@@ -15,7 +16,7 @@ describe('UsersService', () => {
         TypeOrmModule.forRoot(typeormTestingModuleConfig),
         TypeOrmModule.forFeature([User]),
       ],
-      providers: [UsersService],
+      providers: [UsersService, PasswordService],
     }).compile();
 
     usersService = module.get<UsersService>(UsersService);
@@ -25,7 +26,7 @@ describe('UsersService', () => {
     return expect(usersService.create(mockUser)).resolves.toEqual({
       id: expect.any(Number),
       email: mockUser.email,
-      password: mockUser.password,
+      password: expect.any(String),
       createdAt: expect.any(Date),
       updatedAt: expect.any(Date),
     });

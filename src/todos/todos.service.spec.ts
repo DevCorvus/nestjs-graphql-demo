@@ -4,6 +4,7 @@ import { TypeOrmModule } from '@nestjs/typeorm';
 import { typeormTestingModuleConfig } from '../../test/config/typeorm';
 import { mockTodo, mockTodoUpdate } from '../../test/mock-data/todos';
 import { mockUser } from '../../test/mock-data/users';
+import { PasswordService } from '../password/password.service';
 import { User } from '../users/user.entity';
 import { UsersService } from '../users/users.service';
 import { Todo } from './todo.entity';
@@ -19,7 +20,7 @@ describe('TodosService', () => {
         TypeOrmModule.forRoot(typeormTestingModuleConfig),
         TypeOrmModule.forFeature([User, Todo]),
       ],
-      providers: [UsersService, TodosService],
+      providers: [UsersService, PasswordService, TodosService],
     }).compile();
 
     usersService = module.get<UsersService>(UsersService);

@@ -3,6 +3,7 @@ import { FindOptionsWhere, Repository } from 'typeorm';
 import { Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 
+import { PasswordService } from '../password/password.service';
 import { CreateUserInput } from './dto/create-user.input';
 import { UpdateUserInput } from './dto/update-user.input';
 import { User } from './user.entity';
@@ -11,6 +12,7 @@ import { User } from './user.entity';
 export class UsersService {
   constructor(
     @InjectRepository(User) private usersRepository: Repository<User>,
+    private passwordService: PasswordService,
   ) {}
 
   async findAll(where?: FindOptionsWhere<User>): Promise<User[]> {
@@ -23,6 +25,7 @@ export class UsersService {
 
   async create(data: CreateUserInput): Promise<User> {
     const newUser = this.usersRepository.create(data);
+    newUser.password = await this.passwordService.hash(data.password);
     return this.usersRepository.save(newUser);
   }
 
